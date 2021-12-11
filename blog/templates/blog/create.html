@@ -1,0 +1,18 @@
+{% block title %} register {% endblock %}
+
+
+{% if messages %}
+ {%for message in messages %}
+ <div class="alert alert-{{message.tag}}">{{message}}</div>
+ {% endfor %}
+{%endif%}
+{% block content %}
+
+    <form method="post" >
+        {% csrf_token %}
+        {{form.as_p}}
+
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+
+{% endblock %}

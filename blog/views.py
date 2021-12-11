@@ -1,12 +1,17 @@
 from django.db.models.query import QuerySet
-from django.shortcuts import render
+from django.http.response import HttpResponse
+from django.shortcuts import render,redirect
 from datetime import date
 from .models import Post,Author,Tag,Comment
 from django.views.generic import ListView,DetailView
 from django.views import View
 from django.http import HttpResponseRedirect
-from blog.form import CommentsForm
+from blog.form import CommentsForm,UserRegisterForm,CreateBlogForm
 from django.urls import reverse
+import secrets
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 # Create your views here.
 
 # class starting_page(View):
@@ -14,6 +19,24 @@ from django.urls import reverse
 #         all_post = Post.objects.all().order_by('-date')
 #         latest_post = all_post[:3]
 #         return render(request, "blog/index.html",{"posts":latest_post})
+
+
+def genrate_code():
+    code = secrets.token_urlsafe(nbytes=4)
+
+def register(request):
+    if request.method == 'POST':
+        form = UserRegisterForm(request.POST)
+        if form.is_valid():
+            form.save()
+            user_name = form.cleaned_data['username']
+            messages.success(request,f"account created for {user_name}")
+            return HttpResponseRedirect("home")
+        return HttpResponseRedirect(reverse)        
+    else:
+        form = UserRegisterForm()
+    return render(request, "blog/register.html",{"form":form})
+
 
 class starting_page(ListView):
     model = Post
@@ -26,13 +49,41 @@ class starting_page(ListView):
         data = queryset[:3]
         return data
 
+class Create_blog(View):
+    def get(self,request):
+        form = CreateBlogForm()
+        return render(request, "blog/create.html", {"form":form})
+    def post(self,request):
+        form = CreateBlogForm(request.POST)
+        try:
+            if form.is_valid():
+                blog = form.save(commit=False)
+                blog.author = request.user
+                return HttpResponse(blog.author.username)
+            else:
+                return HttpResponse(form.errors)
+
+        # blog = Post.objects.create(title = form.cleaned_data.get('title'),excerpt = form.cleaned_data.get('excerpt'),
+        #         image = form.cleaned_data.get('image'),
+        #         date = form.cleaned_data.get('date'),content = form.cleaned_data.get('content'),tags = form.cleaned_data.get('tags'))
+
+        # blog.author = request.user
+        except Exception as e:
+            return HttpResponse(e)
+        
+def tested(request):
+    if request.method == 'GET':
+        user = request.user
+        return HttpResponse(str(user)
 
 
-class posts(ListView):
-    model = Post
-    template_name = 'blog/all_post.html'
-    context_object_name = 'all_posts'
-    ordering =['-date']
+
+# @login_required
+# class postsview(ListView):
+#     model = Post
+#     template_name = 'blog/all_post.html'
+#     context_object_name = 'all_posts'
+#     ordering =['-date']
     # queryset = Post.objects.all().order_by('-date')
 
     # def get_queryset(self):
@@ -40,7 +91,6 @@ class posts(ListView):
 
     # def get_context_data(self, **kwargs):
     #     kwargs['all_posts'] =
-
 
 class post_details(View):
     def is_stored_post(self, request, post_id):
@@ -112,7 +162,7 @@ class Readlater(View):
             
         else:
             stored_posts.remove(post_id)
-            
+
         request.session['stored_posts'] = stored_posts
 
         return HttpResponseRedirect("home")
@@ -136,10 +186,10 @@ class Readlater(View):
 #     latest_post = all_post[:3]
 #     return render(request, "blog/index.html",{"posts":latest_post})
 
-# def posts(request):
-    
-#     all_post = Post.objects.all().order_by('-date')
-#     return render(request, "blog/all_post.html",{'all_posts':all_post})
+@login_required
+def posts(request):
+    all_post = Post.objects.all().order_by('-date')
+    return render(request, "blog/all_post.html",{'all_posts':all_post})
 
 
 
@@ -147,15 +197,6 @@ class Readlater(View):
 #     ide_post = Post.objects.get(slug=slug)
 #     # ide_post = next(post for post in all_posts if post['slug'] == slug)
 #     return render(request, "blog/post-detail.html" , {'post':ide_post, "post_tags":ide_post.tags.all()})
-
-
-
-
-
-
-
-
-
 
 
 # def get_date(post):
