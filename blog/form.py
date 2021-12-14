@@ -10,7 +10,7 @@ class UserRegisterForm(UserCreationForm):
     email = forms.EmailField()
     class Meta:
         model= User
-        fields= ['first_name', 'last_name','username', 'email']
+        fields= ['first_name', 'last_name', 'email']
 
 
 class CommentsForm(forms.ModelForm):
@@ -27,5 +27,5 @@ class CreateBlogForm(forms.ModelForm):
 
     class Meta:
         model = Post
-        fields =['title','excerpt','content','tags']
+        fields =['title','excerpt','content','image_field']
 

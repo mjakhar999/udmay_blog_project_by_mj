@@ -1,14 +1,17 @@
 from django.db.models.query import QuerySet
+from django.http import response
 from django.http.response import HttpResponse
 from django.shortcuts import render,redirect
 from datetime import date
-from .models import Post,Author,Tag,Comment
+from .models import Post,Author,Tag,Comment,Token
 from django.views.generic import ListView,DetailView
 from django.views import View
 from django.http import HttpResponseRedirect
 from blog.form import CommentsForm,UserRegisterForm,CreateBlogForm
 from django.urls import reverse
 import secrets
+from django.contrib.auth import authenticate,login,logout
+from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -23,6 +26,7 @@ from django.contrib.auth.decorators import login_required
 
 def genrate_code():
     code = secrets.token_urlsafe(nbytes=4)
+    return code
 
 def register(request):
     if request.method == 'POST':
@@ -37,6 +41,96 @@ def register(request):
         form = UserRegisterForm()
     return render(request, "blog/register.html",{"form":form})
 
+# def login(request):
+#     if request.method == "POST":
+#         form = LoginForm(request.POST)
+#         if form.is_valid():
+#             try:
+#                 user = Persons.objects.get(username=form.cleaned_data['username'])  
+#             except:
+#                 messages.warning(request,"user is not registered, please regitser!!")
+#                 return redirect('login')            
+  
+#             if check_password(form.cleaned_data['password'],user.password) and user is not None:
+#                 token = secrets.token_hex(10)
+#                 token = str(token)
+#                 request.session['user'] = user.username
+#                 request.session['email'] = user.email
+
+#                 response = HttpResponseRedirect('home') 
+#                 response.set_cookie("token", token)
+#                 return response
+#             else:
+#                   return render(request, 'workout/login.html', {
+#                     'form': form,
+#                     'error_message': 'Passwords do not match'
+#                 })               
+#     else:
+#         form = LoginForm()
+#     return render(request,'workout/login.html',{'form':form})
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+import json
+
+@method_decorator(csrf_exempt , name='dispatch')    
+def login_user(request):
+    if request.method =="POST":
+        
+        if request.body:
+            data = json.loads(request.body)
+            username = data["username"]
+            passw = data['password']
+            print("ii",type(username),passw)
+
+            # user = User.objects.filter(username =username).first()
+            user = authenticate(request,username= username, password = passw)
+            print("user",user)
+            if user is not None:
+                code = genrate_code()
+                Token.objects.create(token=code, user= user).save()
+                # request.session['id'] = user.id
+                login(request,user)
+                response = HttpResponseRedirect('home')
+                response.set_cookie(key='token',value=code)
+                return response
+            else:
+                return HttpResponse("user not found")
+
+def logout_page(request):
+    print('up')
+    if request.COOKIES.get("token"):
+        print('us')
+        # id_s = request.session["id"]
+        us = request.user
+
+        print("user",type(us.id))
+        tok = Token.objects.get(user__id = us.id)
+        print(tok)
+        tok.delete()
+        print('deleted')
+        logout(request)
+
+        response = HttpResponseRedirect('home')
+        # response.delete_cookie("token")
+        # del request.session['id']
+        # request.session.flush()
+        print('redirect')
+        return response
+    else:
+        return HttpResponse('error')
+            
+def checked(request):
+    if request.COOKIES.get("token"):
+        user = request.user
+        print('user',user,user.username)
+
+        # id_s = request.session["id"]
+        # print("user",id_s)
+        # token = Token.objects.get(user_id = id_s)
+        return HttpResponse("mj")
+    else:
+        return HttpResponse('errors')
+
 
 class starting_page(ListView):
     model = Post
@@ -48,33 +142,51 @@ class starting_page(ListView):
         queryset = super().get_queryset()
         data = queryset[:3]
         return data
-
+@method_decorator(csrf_exempt , name='dispatch')    
 class Create_blog(View):
     def get(self,request):
         form = CreateBlogForm()
         return render(request, "blog/create.html", {"form":form})
     def post(self,request):
-        form = CreateBlogForm(request.POST)
-        try:
-            if form.is_valid():
-                blog = form.save(commit=False)
-                blog.author = request.user
-                return HttpResponse(blog.author.username)
-            else:
-                return HttpResponse(form.errors)
+        print(request.POST)
+        data = request.POST
+        file = request.FILES['image_f']
+        print("f",file)
+        # print('title',data["image_f"])
+        # data = json.loads(request.body)
+
+        # form = CreateBlogForm(request.POST)
+        # breakpoint()
+        # if form.is_valid():
+            # blog = form.save(commit=False)
+        blog = Post.objects.create(title = data['title'],content =data['content'],excerpt= data['excerpt'],image_field =file)
+        blog.author = request.user
+        blog.save()
+        return HttpResponse("home")
+        # else:
+
+            # print(form.errors)
+            # for e,v in form.errors.items():
+                # return HttpResponse(e)
 
         # blog = Post.objects.create(title = form.cleaned_data.get('title'),excerpt = form.cleaned_data.get('excerpt'),
         #         image = form.cleaned_data.get('image'),
         #         date = form.cleaned_data.get('date'),content = form.cleaned_data.get('content'),tags = form.cleaned_data.get('tags'))
 
         # blog.author = request.user
-        except Exception as e:
-            return HttpResponse(e)
-        
+
+# from django.db.models import Avg, Max
+from .models import Ormq
 def tested(request):
-    if request.method == 'GET':
-        user = request.user
-        return HttpResponse(str(user)
+    if request.method == 'POST':
+        data = request.body
+
+        # user = request.user
+        # u = Ormq.objects.values("name").annotate(avg = Avg('num'))
+        return HttpResponse("mj")
+
+        # return HttpResponse([(i['name'],i['avg']) for i in u])
+        # return HttpResponse([(k,v) for k,v in u.items()])
 
 
 
@@ -186,10 +298,13 @@ class Readlater(View):
 #     latest_post = all_post[:3]
 #     return render(request, "blog/index.html",{"posts":latest_post})
 
-@login_required
 def posts(request):
-    all_post = Post.objects.all().order_by('-date')
-    return render(request, "blog/all_post.html",{'all_posts':all_post})
+    if request.cookies.get('token'):
+
+        all_post = Post.objects.all().order_by('-date')
+        return render(request, "blog/all_post.html",{'all_posts':all_post})
+    else:
+        return HttpResponseRedirect('404.html')
 
 
 
@@ -214,3 +329,25 @@ def posts(request):
 # def post_details(request,slug):
 #     ide_post = next(post for post in all_posts if post['slug'] == slug)
 #     return render(request, "blog/post-detail.html" , {'post':ide_post})
+
+
+from django.core.cache import cache
+from django.conf import settings
+from django.core.cache.backends.base import DEFAULT_TIMEOUT
+ 
+# CACHE_TTL = getattr(settings, 'CACHE_TTL', DEFAULT_TIMEOUT)
+
+def view_cached_books(request):
+    if 'product' in cache:
+        # get results from cache
+        products = cache.get('product')
+        print(cache,cache.get("product"))
+        return HttpResponse(products+ "mj")
+ 
+    else:
+        user = request.user
+
+        # results = [product.to_json() for product in products]
+        # store data in cache
+        cache.set("product", user.username, timeout=CACHE_TTL)
+        return HttpResponse(user.username)

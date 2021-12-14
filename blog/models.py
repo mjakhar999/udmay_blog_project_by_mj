@@ -26,12 +26,12 @@ class Tag(models.Model):
 class Post(models.Model):
     title = models.CharField(max_length=60)
     excerpt = models.CharField(max_length=300)
-    image = models.ImageField(upload_to="posts",null=True)
+    image_field = models.ImageField(upload_to="posts/",null=True)
     date = models.DateField(auto_now=True)
     slug = models.SlugField(unique=True)
     content = models.TextField(validators=[MinLengthValidator(10)])
     author = models.ForeignKey(User, on_delete=models.SET_NULL,null=True)
-    tags = models.ManyToManyField(Tag)
+    # tags = models.ManyToManyField(Tag)
 
     def __str__(self):
         return self.title
@@ -51,4 +51,15 @@ class Comment(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE,null=True,related_name='comments')
 
 
+class Token(models.Model):
+    token = models.CharField(max_length=40)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
+    def __str__(self):
+        return self.token +"  -->  " + self.user.username
+
+
+class Ormq(models.Model):
+    num = models.IntegerField()
+    name = models.CharField(max_length=20)
+    image = models.ImageField(upload_to="posts/",null=True,blank= True)
