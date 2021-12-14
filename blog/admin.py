@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Author,Tag,Post,Comment,Token
+from .models import Author,Tag,Post,Comment,Token,Ormq
 # Register your models here.
 
 class Postadmin(admin.ModelAdmin):
@@ -17,4 +17,4 @@ admin.site.register(Tag)
 admin.site.register(Post,Postadmin)
 admin.site.register(Comment,Commentadmin)
 admin.site.register(Token)
-# admin.site.register(Ormq)
+admin.site.register(Ormq)
