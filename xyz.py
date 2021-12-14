@@ -1,14 +1,11 @@
 
-"hi all i'm learning python"
+"hi all i'm learning python and it's good for you"
 
 "sss" +"n" +"X" "mhjj"
 
 "manoj"
+"kumar"
 
 "kumar"
-"tata"
-"ji"
-"byyyyyeee"
-"bye"
-"jakhar"
 "jaatboy"
+"byee"
